@@ -1,4 +1,9 @@
-
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>4대보험 계산기</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#f0f4f8;padding:12px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
@@ -10,7 +15,8 @@ h1{font-size:20px;color:#1a1a2e;margin-bottom:2px}
 .inp .w{font-size:16px;font-weight:600;color:#666;margin-right:6px}
 .inp input{flex:1;border:none;background:transparent;padding:12px 0;font-size:18px;font-weight:700;color:#1a1a2e;outline:none;text-align:right;width:100%}
 .btns{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
-.btns button{flex:1;min-width:46px;padding:6px 8px;border:1px solid #d0d5dd;background:#fff;border-radius:20px;font-size:12px;cursor:pointer}
+.btns button{flex:1;min-width:46px;padding:6px 8px;border:1px solid #d0d5dd;background:#fff;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.15s}
+.btns button:hover{background:#e8f0fe}
 .btns button:active{background:#2563eb;color:#fff}
 .res{background:#f7f9fc;border-radius:14px;padding:14px;margin-top:6px}
 .net{display:flex;justify-content:space-between;align-items:center;padding:8px 0 12px;border-bottom:2px dashed #d0d5dd;margin-bottom:12px}
@@ -25,23 +31,48 @@ h1{font-size:20px;color:#1a1a2e;margin-bottom:2px}
 .ifo{margin-top:12px;padding:10px 12px;background:#fff8e1;border-radius:10px;font-size:11px;color:#8d6e00;line-height:1.6}
 .ft{text-align:center;font-size:10px;color:#aaa;margin-top:14px}
 </style>
+</head>
+<body>
 <div class="wrap">
 <h1>🏗️ 4대보험 계산기</h1>
 <div class="sub">건설일용직 하루 노임 (2026년 요율)</div>
-<div><span class="lb">일당</span>
-<div class="inp"><span class="w">₩</span> <input id="w" type="number" value="200000"></div>
-<div class="btns"><button>15만</button> <button>18만</button> <button>20만</button> <button>25만</button> <button>30만</button> <button>40만</button></div>
+
+<div>
+  <span class="lb">일당</span>
+  <div class="inp">
+    <span class="w">₩</span>
+    <input id="w" type="number" value="200000" oninput="go()">
+  </div>
+  <div class="btns">
+    <button onclick="s(150000)">15만</button>
+    <button onclick="s(180000)">18만</button>
+    <button onclick="s(200000)">20만</button>
+    <button onclick="s(250000)">25만</button>
+    <button onclick="s(300000)">30만</button>
+    <button onclick="s(400000)">40만</button>
+  </div>
 </div>
-<div id="r" class="res"><div class="net"><span class="l">💰 실수령액</span><span class="a">179,080원</span></div><div class="rw"><span class="n">🏛️ 국민연금 (4.75%)</span><span class="v">9,500원</span></div><div class="rw"><span class="n">🏥 건강보험 (3.595%)</span><span class="v">7,190원</span></div><div class="rw"><span class="n">👴 장기요양보험</span><span class="v">945원</span></div><div class="rw"><span class="n">💼 고용보험 (0.9%)</span><span class="v">1,800원</span></div><div class="rw"><span class="n">📄 소득세</span><span class="v">1,350원</span></div><div class="rw"><span class="n">🏛️ 지방소득세</span><span class="v">135원</span></div><div class="tr"><span class="n">총 공제 (10.5%)</span><span class="v">20,920원</span></div></div>
-<div class="ifo"><b>📌 참고</b><br>· 국민연금 4.75% (월8일이상)<br>· 건강보험 3.595%<br>· 소득세 (일당-15만)×6%×45%<br>· 187,000원까지 소득세 0원<br>· 참고용이며 실제와 다를 수 있음</div>
+
+<div id="r" class="res"></div>
+
+<div class="ifo">
+  <b>📌 참고</b><br>
+  · 국민연금 4.75% (월8일이상)<br>
+  · 건강보험 3.595%<br>
+  · 소득세 (일당-15만)×6%×45%<br>
+  · 187,000원까지 소득세 0원<br>
+  · 참고용이며 실제와 다를 수 있음
+</div>
 <div class="ft">일가자인력 인천미추홀점</div>
 </div>
+
 <script>
 function f(n){return n.toLocaleString()+'원'}
 function s(v){document.getElementById('w').value=v;go()}
 function go(){
   var w=parseInt(document.getElementById('w').value)||0;
-  var p=Math.round(w*0.0475),h=Math.round(w*0.03595),c=Math.round(h*0.1314),e=Math.round(w*0.009);
+  var p=Math.round(w*0.0475),h=Math.round(w*0.03595);
+  var c=Math.round(h*0.1314),e=Math.round(w*0.009);
   var t=Math.max(0,w-150000),it=Math.round(t*0.06*0.45),lt=Math.round(it*0.1);
   var td=p+h+c+e+it+lt,np=w-td,r=w>0?((td/w)*100).toFixed(1):0;
   document.getElementById('r').innerHTML=
@@ -56,3 +87,5 @@ function go(){
 }
 go();
 </script>
+</body>
+</html>
