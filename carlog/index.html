@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a73e8">
+<title>내차일지 - 차량 정비 기록</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --primary: #1a73e8;
+    --primary-dark: #1557b0;
+    --bg: #f4f6fa;
+    --card: #ffffff;
+    --text: #1f2430;
+    --sub: #6b7280;
+    --line: #e5e8ef;
+    --ok: #188038;
+    --warn: #b06000;
+    --danger: #d93025;
+    --radius: 14px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    background: var(--bg); color: var(--text);
+    max-width: 520px; margin: 0 auto; padding-bottom: 80px;
+    min-height: 100vh;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--primary); color: #fff;
+    padding: 14px 18px calc(14px + env(safe-area-inset-top));
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  header .sub { font-size: 12px; opacity: .85; margin-top: 2px; }
+  .btn-icon {
+    background: rgba(255,255,255,.18); border: none; color: #fff;
+    width: 36px; height: 36px; border-radius: 10px; font-size: 18px; cursor: pointer;
+  }
+  main { padding: 16px; }
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  .card h2 { font-size: 15px; margin-bottom: 12px; display:flex; align-items:center; gap:6px; }
+  .card h2 .cnt {
+    background: var(--primary); color:#fff; font-size: 11px; border-radius: 20px;
+    padding: 1px 8px; font-weight: 600;
+  }
+  /* dashboard */
+  .odo-box { display:flex; align-items:baseline; gap:8px; }
+  .odo-box .num { font-size: 30px; font-weight: 800; letter-spacing:-0.5px; }
+  .odo-box .unit { font-size: 14px; color: var(--sub); }
+  .odo-edit { margin-left:auto; font-size:12px; color:var(--primary); background:none; border:none; cursor:pointer; text-decoration:underline; }
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .stat {
+    background:#f8fafd; border:1px solid var(--line); border-radius:12px; padding:12px;
+  }
+  .stat .label { font-size:11px; color:var(--sub); margin-bottom:4px; }
+  .stat .value { font-size:16px; font-weight:700; }
+  .stat .value small { font-size:11px; color:var(--sub); font-weight:400; }
+  /* schedule list */
+  .sch-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); }
+  .sch-item:last-child { border-bottom:none; }
+  .sch-name { font-size:14px; font-weight:600; }
+  .sch-detail { font-size:12px; color:var(--sub); margin-top:2px; }
+  .badge { font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+  .badge.ok { background:#e6f4ea; color:var(--ok); }
+  .badge.warn { background:#fef7e0; color:var(--warn); }
+  .badge.danger { background:#fce8e6; color:var(--danger); }
+  /* list */
+  .rec { padding:12px 0; border-bottom:1px solid var(--line); }
+  .rec:last-child { border-bottom:none; }
+  .rec-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .rec-title { font-size:14px; font-weight:600; }
+  .rec-meta { font-size:12px; color:var(--sub); margin-top:3px; line-height:1.5; }
+  .rec-cost { font-size:13px; font-weight:700; color:var(--primary-dark); white-space:nowrap; }
+  .rec-del { background:none; border:none; color:#c0c4cd; font-size:16px; cursor:pointer; padding:0 4px; }
+  .rec-del:active { color:var(--danger); }
+  .empty { text-align:center; color:var(--sub); font-size:13px; padding:24px 0; line-height:1.7; }
+  /* forms */
+  label { display:block; font-size:12px; font-weight:600; color:var(--sub); margin:10px 0 4px; }
+  input, select, textarea {
+    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px;
+    font-size:15px; font-family:inherit; background:#fff; color:var(--text);
+  }
+  input:focus, select:focus, textarea:focus { outline:2px solid #cfe0fb; border-color:var(--primary); }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .row2x { display:grid; grid-template-columns:2fr 1fr; gap:10px; }
+  .btn {
+    display:block; width:100%; padding:13px; border:none; border-radius:12px;
+    font-size:15px; font-weight:700; cursor:pointer; margin-top:16px;
+  }
+  .btn.primary { background:var(--primary); color:#fff; }
+  .btn.primary:active { background:var(--primary-dark); }
+  .btn.ghost { background:#f1f3f7; color:var(--text); }
+  .btn.danger { background:#fce8e6; color:var(--danger); }
+  /* bottom nav */
+  nav {
+    position: fixed; bottom:0; left:0; right:0; z-index:20;
+    max-width:520px; margin:0 auto;
+    background:#fff; border-top:1px solid var(--line);
+    display:flex; padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav button {
+    flex:1; background:none; border:none; padding:10px 0 8px; cursor:pointer;
+    font-size:11px; color:var(--sub); display:flex; flex-direction:column; align-items:center; gap:2px;
+  }
+  nav button .ico { font-size:20px; line-height:1; }
+  nav button.active { color:var(--primary); font-weight:700; }
+  /* modal */
+  .modal-wrap {
+    position: fixed; inset:0; background:rgba(0,0,0,.45); z-index:30;
+    display:none; align-items:flex-end; justify-content:center;
+  }
+  .modal-wrap.show { display:flex; }
+  .modal {
+    background:#fff; width:100%; max-width:520px; max-height:88vh; overflow-y:auto;
+    border-radius:20px 20px 0 0; padding:20px 18px calc(20px + env(safe-area-inset-bottom));
+  }
+  .modal h3 { font-size:17px; margin-bottom:4px; }
+  .modal .close-x { position:absolute; right:18px; font-size:22px; background:none; border:none; color:var(--sub); cursor:pointer; }
+  .modal-head { position:relative; display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: rgba(31,36,48,.92); color:#fff; padding:10px 18px; border-radius:30px;
+    font-size:13px; z-index:50; display:none; max-width:80%; text-align:center;
+  }
+  .fuel-badge { display:inline-block; background:#e8f0fe; color:var(--primary-dark); font-size:12px; font-weight:700; border-radius:8px; padding:2px 8px; }
+  details.settings { margin-bottom:8px; }
+  details.settings summary { cursor:pointer; font-size:14px; font-weight:600; padding:8px 0; color:var(--text); }
+  .danger-zone { border:1px solid #f5c6c2; background:#fdf3f2; border-radius:12px; padding:12px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1 id="hTitle">내차일지</h1>
+    <div class="sub" id="hSub">차량 정비 · 주유 기록</div>
+  </div>
+  <button class="btn-icon" id="btnBackup" title="데이터 백업/복원">⬇️</button>
+</header>
+
+<main id="view-home">
+  <!-- 홈: 대시보드 -->
+  <div class="card">
+    <div class="odo-box">
+      <span class="num" id="odoNum">--</span><span class="unit">km</span>
+      <button class="odo-edit" id="btnOdoEdit">수정</button>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="label">이번 달 정비 비용</div><div class="value" id="stCost">0원</div></div>
+      <div class="stat"><div class="label">전체 정비 건수</div><div class="value" id="stCount">0건</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔧 다음 교체 예정</h2>
+    <div id="scheduleList"></div>
+  </div>
+
+  <div class="card">
+    <h2>📝 최근 정비 내역</h2>
+    <div id="recentList"></div>
+  </div>
+</main>
+
+<main id="view-maint" style="display:none">
+  <div class="card">
+    <h2>정비 기록 <span class="cnt" id="maintCnt">0</span></h2>
+    <div id="maintList"></div>
+    <button class="btn primary" id="btnAddMaint">+ 정비 기록 추가</button>
+  </div>
+</main>
+
+<main id="view-fuel" style="display:none">
+  <div class="card">
+    <h2>주유 기록 <span class="cnt" id="fuelCnt">0</span></h2>
+    <div id="fuelList"></div>
+    <button class="btn primary" id="btnAddFuel">+ 주유 기록 추가</button>
+  </div>
+</main>
+
+<main id="view-settings" style="display:none">
+  <div class="card">
+    <h2>🚗 차량 정보</h2>
+    <label>차량 이름</label>
+    <input type="text" id="inpCarName" placeholder="예: 티구안">
+    <label>현재 주행거리 (km)</label>
+    <input type="number" id="inpOdo" inputmode="numeric" placeholder="예: 90000">
+    <button class="btn primary" id="btnSaveCar">차량 정보 저장</button>
+  </div>
+
+  <div class="card">
+    <h2>🔄 교체 주기 관리</h2>
+    <div id="cycleList"></div>
+    <button class="btn ghost" id="btnAddCycle">+ 교체 주기 항목 추가</button>
+    <p style="font-size:11px;color:var(--sub);margin-top:8px;line-height:1.5">교체 주기 항목을 등록하면 홈에서 다음 교체 예정(km)을 자동으로 계산해 드려요.<br>예: 타이밍벨트(12만 km), 엔진오일(1만 km), 타이어(4만 km)</p>
+  </div>
+
+  <div class="card">
+    <h2>💾 데이터 관리</h2>
+    <button class="btn ghost" id="btnExport">백업 파일 내보내기 (JSON)</button>
+    <button class="btn ghost" id="btnImportTrigger" style="margin-top:8px">백업 파일 불러오기</button>
+    <input type="file" id="inpImport" accept=".json" style="display:none">
+    <div class="danger-zone">
+      <button class="btn danger" id="btnWipe">전체 데이터 초기화</button>
+    </div>
+    <p style="font-size:11px;color:var(--sub);margin-top:10px;line-height:1.6">데이터는 이 기기에만 저장됩니다. 폰을 바꾸면 위 백업 기능으로 옮기세요.</p>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <div style="font-size:12px;color:var(--sub);line-height:1.7">
+      <b>내차일지</b> v1.0 · 광고 없음 · 데이터 100% 내 기기 보관<br>
+      만든 사람: 서로깅 (대표님 전용)
+    </div>
+  </div>
+</main>
+
+<!-- 정비 추가 모달 -->
+<div class="modal-wrap" id="modalMaint">
+  <div class="modal">
+    <div class="modal-head"><h3>정비 기록</h3><button class="close-x" data-close="modalMaint">✕</button></div>
+    <input type="hidden" id="mEditId">
+    <label>정비 날짜</label>
+    <input type="date" id="mDate">
+    <div class="row2">
+      <div><label>주행거리 (km)</label><input type="number" id="mOdo" inputmode="numeric"></div>
+      <div><label>비용 (원)</label><input type="number" id="mCost" inputmode="numeric" placeholder="0"></div>
+    </div>
+    <label>정비 항목 *</label>
+    <input type="text" id="mItem" placeholder="예: 타이밍벨트 교체, 엔진오일 교환" list="maintItemSuggest">
+    <datalist id="maintItemSuggest"></datalist>
+    <label>정비소 / 업체</label>
+    <input type="text" id="mShop" placeholder="예: 폭스바겐 공식 서비스센터">
+    <label>메모</label>
+    <textarea id="mMemo" rows="2" placeholder="메모 (선택)"></textarea>
+    <button class="btn primary" id="btnSaveMaint">저장</button>
+  </div>
+</div>
+
+<!-- 주유 추가 모달 -->
+<div class="modal-wrap" id="modalFuel">
+  <div class="modal">
+    <div class="modal-head"><h3>주유 기록</h3><button class="close-x" data-close="modalFuel">✕</button></div>
+    <input type="hidden" id="fEditId">
+    <label>주유 날짜</label>
+    <input type="date" id="fDate">
+    <div class="row2">
+      <div><label>주행거리 (km)</label><input type="number" id="fOdo" inputmode="numeric"></div>
+      <div><label>주유량 (L)</label><input type="number" id="fLiter" inputmode="decimal" step="0.1"></div>
+    </div>
+    <label>금액 (원)</label>
+    <input type="number" id="fCost" inputmode="numeric" placeholder="0">
+    <button class="btn primary" id="btnSaveFuel">저장</button>
+  </div>
+</div>
+
+<!-- 주기 추가 모달 -->
+<div class="modal-wrap" id="modalCycle">
+  <div class="modal">
+    <div class="modal-head"><h3>교체 주기 항목</h3><button class="close-x" data-close="modalCycle">✕</button></div>
+    <input type="hidden" id="cEditId">
+    <label>항목 이름 *</label>
+    <input type="text" id="cName" placeholder="예: 타이밍벨트">
+    <div class="row2">
+      <div><label>교체 주기 (km)</label><input type="number" id="cInterval" inputmode="numeric" placeholder="예: 120000"></div>
+      <div><label>최근 교체 시 km</label><input type="number" id="cLastKm" inputmode="numeric" placeholder="예: 75000"></div>
+    </div>
+    <p style="font-size:11px;color:var(--sub);margin-top:6px">최근 교체 시 km + 교체 주기 = 다음 교체 예정 km (홈에 표시)</p>
+    <button class="btn primary" id="btnSaveCycle">저장</button>
+  </div>
+</div>
+
+<!-- 주행거리 수정 모달 -->
+<div class="modal-wrap" id="modalOdo">
+  <div class="modal">
+    <div class="modal-head"><h3>주행거리 수정</h3><button class="close-x" data-close="modalOdo">✕</button></div>
+    <label>현재 주행거리 (km)</label>
+    <input type="number" id="odoEditVal" inputmode="numeric">
+    <button class="btn primary" id="btnSaveOdo">저장</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<nav>
+  <button data-view="home" class="active"><span class="ico">🏠</span>홈</button>
+  <button data-view="maint"><span class="ico">🔧</span>정비</button>
+  <button data-view="fuel"><span class="ico">⛽</span>주유</button>
+  <button data-view="settings"><span class="ico">⚙️</span>설정</button>
+</nav>
+
+<script>
+"use strict";
+// ── 상태 관리 ──────────────────────────────
+const LS_KEY = "naecha_ilji_v1";
+let store = {
+  carName: "내 차",
+  odo: 0,
+  maint: [],   // {id, date, odo, item, shop, cost, memo}
+  fuel: [],    // {id, date, odo, liter, cost}
+  cycles: []   // {id, name, intervalKm, lastKm}
+};
+
+function load() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      store = Object.assign(store, p);
+      if (!Array.isArray(store.maint)) store.maint = [];
+      if (!Array.isArray(store.fuel)) store.fuel = [];
+      if (!Array.isArray(store.cycles)) store.cycles = [];
+    }
+  } catch (e) { console.error("load fail", e); }
+}
+function save() {
+  localStorage.setItem(LS_KEY, JSON.stringify(store));
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function fmt(n) {
+  if (n === null || n === undefined || isNaN(n)) return "0";
+  return n.toLocaleString("ko-KR");
+}
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+// ── 탭 전환 ───────────────────────────────
+const views = ["home", "maint", "fuel", "settings"];
+function showView(v) {
+  views.forEach(x => {
+    document.getElementById("view-" + x).style.display = (x === v) ? "block" : "none";
+  });
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.view === v));
+  if (v === "home") renderHome();
+  if (v === "maint") renderMaint();
+  if (v === "fuel") renderFuel();
+  if (v === "settings") renderSettings();
+}
+document.querySelectorAll("nav button").forEach(b => {
+  b.addEventListener("click", () => showView(b.dataset.view));
+});
+
+// ── 헤더 ──────────────────────────────────
+function renderHeader() {
+  document.getElementById("hTitle").textContent = store.carName || "내 차";
+  document.getElementById("hSub").textContent = "현재 " + fmt(store.odo) + " km";
+}
+
+// ── 홈 ────────────────────────────────────
+function renderHome() {
+  renderHeader();
+  document.getElementById("odoNum").textContent = fmt(store.odo);
+
+  // 이번 달 비용
+  const ym = todayStr().slice(0, 7);
+  const monthCost = store.maint.filter(m => (m.date || "").startsWith(ym)).reduce((a, m) => a + (Number(m.cost) || 0), 0);
+  document.getElementById("stCost").textContent = fmt(monthCost) + "원";
+  document.getElementById("stCount").textContent = fmt(store.maint.length) + "건";
+
+  // 교체 예정 목록
+  const sl = document.getElementById("scheduleList");
+  if (!store.cycles.length) {
+    sl.innerHTML = '<div class="empty">등록된 교체 주기가 없어요.<br>설정 탭에서 추가해 보세요.</div>';
+  } else {
+    const sorted = store.cycles.slice().sort((a, b) => dueKm(a) - dueKm(b));
+    sl.innerHTML = sorted.map(c => {
+      const due = dueKm(c);
+      const remain = due - (Number(store.odo) || 0);
+      const pct = remain <= 0 ? 0 : Math.max(0, Math.min(100, Math.round((1 - remain / Math.max(1, c.intervalKm)) * 100)));
+      let badge, cls;
+      if (remain <= 0) { badge = "교체 필요"; cls = "danger"; }
+      else if (remain <= 3000) { badge = "곧 교체 (" + fmt(remain) + "km 남음)"; cls = "warn"; }
+      else { badge = fmt(remain) + "km 남음"; cls = "ok"; }
+      const barColor = remain <= 0 ? "var(--danger)" : remain <= 3000 ? "var(--warn)" : "var(--ok)";
+      return '<div class="sch-item"><div>' +
+        '<div class="sch-name">' + esc(c.name) + '</div>' +
+        '<div class="sch-detail">다음 교체: ' + fmt(due) + 'km · 주기 ' + fmt(c.intervalKm) + 'km</div>' +
+        '<div style="height:5px;background:#eef1f6;border-radius:3px;margin-top:6px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:3px"></div></div>' +
+        '</div><span class="badge ' + cls + '">' + badge + '</span></div>';
+    }).join("");
+  }
+
+  // 최근 정비
+  const rl = document.getElementById("recentList");
+  const recent = store.maint.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 5);
+  if (!recent.length) {
+    rl.innerHTML = '<div class="empty">아직 정비 기록이 없어요.<br>"정비" 탭에서 첫 기록을 남겨 보세요!</div>';
+  } else {
+    rl.innerHTML = recent.map(m => {
+      const cost = Number(m.cost) ? '<span class="rec-cost">' + fmt(m.cost) + '원</span>' : "";
+      return '<div class="rec"><div class="rec-top"><div><div class="rec-title">' + esc(m.item) + '</div>' +
+        '<div class="rec-meta">' + esc(m.date || "") + ' · ' + fmt(m.odo) + 'km' + (m.shop ? " · " + esc(m.shop) : "") + '</div></div>' + cost + '</div></div>';
+    }).join("");
+  }
+}
+function dueKm(c) { return (Number(c.lastKm) || 0) + (Number(c.intervalKm) || 0); }
+
+// ── 정비 ──────────────────────────────────
+function renderMaint() {
+  document.getElementById("maintCnt").textContent = store.maint.length;
+  const list = store.maint.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.odo||0) - (a.odo||0));
+  const el = document.getElementById("maintList");
+  if (!list.length) {
+    el.innerHTML = '<div class="empty">정비 기록이 없습니다.</div>';
+    return;
+  }
+  el.innerHTML = list.map(m => {
+    const cost = Number(m.cost) ? '<span class="rec-cost">' + fmt(m.cost) + '원</span>' : "";
+    const memo = m.memo ? '<div class="rec-meta">📝 ' + esc(m.memo) + '</div>' : "";
+    return '<div class="rec" data-id="' + m.id + '"><div class="rec-top">' +
+      '<div><div class="rec-title">' + esc(m.item) + '</div>' +
+      '<div class="rec-meta">' + esc(m.date || "") + ' · ' + fmt(m.odo) + 'km' + (m.shop ? " · " + esc(m.shop) : "") + '</div>' + memo + '</div>' +
+      '<div style="display:flex;align-items:center;gap:2px">' + cost +
+      '<button class="rec-del" data-del="' + m.id + '" title="삭제">🗑</button></div></div></div>';
+  }).join("");
+  // 삭제 이벤트
+  el.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => delMaint(b.dataset.del)));
+}
+function openMaintModal(id) {
+  const m = id ? store.maint.find(x => x.id === id) : null;
+  document.getElementById("mEditId").value = id || "";
+  document.getElementById("mDate").value = m ? m.date : todayStr();
+  document.getElementById("mOdo").value = m ? m.odo : (store.odo || "");
+  document.getElementById("mCost").value = m ? m.cost : "";
+  document.getElementById("mItem").value = m ? m.item : "";
+  document.getElementById("mShop").value = m ? m.shop : "";
+  document.getElementById("mMemo").value = m ? m.memo : "";
+  // 자동완성 제안: 기존 항목 + 주기 항목
+  const sugg = new Set();
+  store.maint.forEach(x => x.item && sugg.add(x.item));
+  store.cycles.forEach(x => x.name && sugg.add(x.name + " 교체"));
+  document.getElementById("maintItemSuggest").innerHTML = Array.from(sugg).map(s => "<option value='" + esc(s) + "'>").join("");
+  showModal("modalMaint");
+}
+function saveMaint() {
+  const item = document.getElementById("mItem").value.trim();
+  if (!item) { toast("정비 항목을 입력해 주세요."); return; }
+  const id = document.getElementById("mEditId").value;
+  const rec = {
+    id: id || uid(),
+    date: document.getElementById("mDate").value || todayStr(),
+    odo: Number(document.getElementById("mOdo").value) || 0,
+    item: item,
+    shop: document.getElementById("mShop").value.trim(),
+    cost: Number(document.getElementById("mCost").value) || 0,
+    memo: document.getElementById("mMemo").value.trim()
+  };
+  if (id) {
+    const i = store.maint.findIndex(x => x.id === id);
+    if (i >= 0) store.maint[i] = rec;
+  } else {
+    store.maint.push(rec);
+    // 현재 km보다 큰 주행거리면 자동 갱신
+    if (rec.odo > (Number(store.odo) || 0)) { store.odo = rec.odo; }
+  }
+  save(); hideModal("modalMaint");
+  renderHeader(); showView("maint");
+  toast("정비 기록이 저장되었습니다.");
+}
+function delMaint(id) {
+  if (!confirm("이 정비 기록을 삭제할까요?")) return;
+  store.maint = store.maint.filter(x => x.id !== id);
+  save(); renderMaint(); renderHome();
+  toast("삭제되었습니다.");
+}
+
+// ── 주유 ──────────────────────────────────
+function renderFuel() {
+  document.getElementById("fuelCnt").textContent = store.fuel.length;
+  const list = store.fuel.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.odo||0) - (a.odo||0));
+  const el = document.getElementById("fuelList");
+  if (!list.length) {
+    el.innerHTML = '<div class="empty">주유 기록이 없습니다.</div>';
+    return;
+  }
+  // 연비 계산: 인접 기록 간
+  el.innerHTML = list.map((f, i) => {
+    const next = list[i + 1]; // 더 이전 기록
+    let mpgHtml = "";
+    if (next && f.odo > next.odo && f.liter > 0) {
+      const km = f.odo - next.odo;
+      const mpg = km / f.liter;
+      mpgHtml = '<span class="fuel-badge">연비 ' + mpg.toFixed(1) + ' km/L</span> ';
+    }
+    const cost = Number(f.cost) ? '<span class="rec-cost">' + fmt(f.cost) + '원</span>' : "";
+    return '<div class="rec" data-id="' + f.id + '"><div class="rec-top">' +
+      '<div><div class="rec-title">' + mpgHtml + esc(f.date || "") + ' · ' + fmt(f.odo) + 'km</div>' +
+      '<div class="rec-meta">주유량 ' + (f.liter ? f.liter + "L" : "-") + (f.cost && f.liter ? " · " + Math.round(f.cost / f.liter) + "원/L" : "") + '</div></div>' +
+      '<div style="display:flex;align-items:center;gap:2px">' + cost +
+      '<button class="rec-del" data-del="' + f.id + '" title="삭제">🗑</button></div></div></div>';
+  }).join("");
+  el.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => delFuel(b.dataset.del)));
+}
+function openFuelModal(id) {
+  const f = id ? store.fuel.find(x => x.id === id) : null;
+  document.getElementById("fEditId").value = id || "";
+  document.getElementById("fDate").value = f ? f.date : todayStr();
+  document.getElementById("fOdo").value = f ? f.odo : (store.odo || "");
+  document.getElementById("fLiter").value = f ? f.liter : "";
+  document.getElementById("fCost").value = f ? f.cost : "";
+  showModal("modalFuel");
+}
+function saveFuel() {
+  const odo = Number(document.getElementById("fOdo").value);
+  const liter = Number(document.getElementById("fLiter").value);
+  if (!odo) { toast("주행거리를 입력해 주세요."); return; }
+  const id = document.getElementById("fEditId").value;
+  const rec = {
+    id: id || uid(),
+    date: document.getElementById("fDate").value || todayStr(),
+    odo: odo,
+    liter: liter || 0,
+    cost: Number(document.getElementById("fCost").value) || 0
+  };
+  if (id) {
+    const i = store.fuel.findIndex(x => x.id === id);
+    if (i >= 0) store.fuel[i] = rec;
+  } else {
+    store.fuel.push(rec);
+    if (odo > (Number(store.odo) || 0)) { store.odo = odo; }
+  }
+  save(); hideModal("modalFuel");
+  renderHeader(); showView("fuel");
+  toast("주유 기록이 저장되었습니다.");
+}
+function delFuel(id) {
+  if (!confirm("이 주유 기록을 삭제할까요?")) return;
+  store.fuel = store.fuel.filter(x => x.id !== id);
+  save(); renderFuel();
+  toast("삭제되었습니다.");
+}
+
+// ── 교체 주기 ─────────────────────────────
+function renderSettings() {
+  renderHeader();
+  document.getElementById("inpCarName").value = store.carName || "";
+  document.getElementById("inpOdo").value = store.odo || "";
+  const el = document.getElementById("cycleList");
+  if (!store.cycles.length) {
+    el.innerHTML = '<div class="empty" style="padding:12px 0">등록된 교체 주기 없음</div>';
+  } else {
+    el.innerHTML = store.cycles.map(c => {
+      const remain = dueKm(c) - (Number(store.odo) || 0);
+      const status = remain <= 0 ? "⚠️ 교체 필요" : "다음 " + fmt(dueKm(c)) + "km";
+      return '<div class="rec"><div class="rec-top"><div><div class="rec-title">' + esc(c.name) + '</div>' +
+        '<div class="rec-meta">주기 ' + fmt(c.intervalKm) + 'km · 최근 교체 ' + fmt(c.lastKm) + 'km<br>' + status + '</div></div>' +
+        '<button class="rec-del" data-cycle-del="' + c.id + '" title="삭제">🗑</button></div></div>';
+    }).join("");
+  }
+  el.querySelectorAll("[data-cycle-del]").forEach(b => b.addEventListener("click", () => delCycle(b.dataset.cycleDel)));
+}
+function openCycleModal(id) {
+  const c = id ? store.cycles.find(x => x.id === id) : null;
+  document.getElementById("cEditId").value = id || "";
+  document.getElementById("cName").value = c ? c.name : "";
+  document.getElementById("cInterval").value = c ? c.intervalKm : "";
+  document.getElementById("cLastKm").value = c ? c.lastKm : "";
+  showModal("modalCycle");
+}
+function saveCycle() {
+  const name = document.getElementById("cName").value.trim();
+  const intervalKm = Number(document.getElementById("cInterval").value);
+  if (!name) { toast("항목 이름을 입력해 주세요."); return; }
+  if (!intervalKm) { toast("교체 주기(km)를 입력해 주세요."); return; }
+  const id = document.getElementById("cEditId").value;
+  const rec = { id: id || uid(), name: name, intervalKm: intervalKm, lastKm: Number(document.getElementById("cLastKm").value) || 0 };
+  if (id) {
+    const i = store.cycles.findIndex(x => x.id === id);
+    if (i >= 0) store.cycles[i] = rec;
+  } else {
+    store.cycles.push(rec);
+  }
+  save(); hideModal("modalCycle"); renderSettings(); renderHome();
+  toast("교체 주기가 저장되었습니다.");
+}
+function delCycle(id) {
+  if (!confirm("이 교체 주기 항목을 삭제할까요?")) return;
+  store.cycles = store.cycles.filter(x => x.id !== id);
+  save(); renderSettings(); renderHome();
+  toast("삭제되었습니다.");
+}
+
+// ── 설정 / 저장 ───────────────────────────
+function saveCar() {
+  store.carName = document.getElementById("inpCarName").value.trim() || "내 차";
+  store.odo = Number(document.getElementById("inpOdo").value) || 0;
+  save(); renderHeader(); renderHome();
+  toast("차량 정보가 저장되었습니다.");
+}
+function exportData() {
+  const blob = new Blob([JSON.stringify(store, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "naecha_ilji_backup_" + todayStr() + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("백업 파일이 다운로드되었습니다.");
+}
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const p = JSON.parse(e.target.result);
+      if (!p || !Array.isArray(p.maint)) throw new Error("bad");
+      store = Object.assign(store, p);
+      if (!Array.isArray(store.fuel)) store.fuel = [];
+      if (!Array.isArray(store.cycles)) store.cycles = [];
+      save(); renderHome(); renderSettings();
+      toast("백업을 불러왔습니다.");
+    } catch (err) {
+      toast("올바른 백업 파일이 아닙니다.");
+    }
+  };
+  reader.readAsText(file);
+}
+function wipeAll() {
+  if (!confirm("모든 데이터를 삭제할까요? (백업 먼저 권장)")) return;
+  if (!confirm("정말로 초기화할까요? 되돌릴 수 없습니다.")) return;
+  store = { carName: "내 차", odo: 0, maint: [], fuel: [], cycles: [] };
+  save(); renderHome(); renderSettings();
+  toast("모든 데이터가 초기화되었습니다.");
+}
+
+// ── 모달 / 토스트 ─────────────────────────
+function showModal(id) { document.getElementById(id).classList.add("show"); }
+function hideModal(id) { document.getElementById(id).classList.remove("show"); }
+document.querySelectorAll(".close-x").forEach(b => b.addEventListener("click", () => hideModal(b.dataset.close)));
+document.querySelectorAll(".modal-wrap").forEach(w => w.addEventListener("click", e => { if (e.target === w) w.classList.remove("show"); }));
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.display = "none"; }, 2200);
+}
+
+// ── 이벤트 바인딩 ─────────────────────────
+document.getElementById("btnAddMaint").addEventListener("click", () => openMaintModal(null));
+document.getElementById("btnSaveMaint").addEventListener("click", saveMaint);
+document.getElementById("btnAddFuel").addEventListener("click", () => openFuelModal(null));
+document.getElementById("btnSaveFuel").addEventListener("click", saveFuel);
+document.getElementById("btnAddCycle").addEventListener("click", () => openCycleModal(null));
+document.getElementById("btnSaveCycle").addEventListener("click", saveCycle);
+document.getElementById("btnSaveCar").addEventListener("click", saveCar);
+document.getElementById("btnOdoEdit").addEventListener("click", () => {
+  document.getElementById("odoEditVal").value = store.odo || "";
+  showModal("modalOdo");
+});
+document.getElementById("btnSaveOdo").addEventListener("click", () => {
+  store.odo = Number(document.getElementById("odoEditVal").value) || 0;
+  save(); hideModal("modalOdo"); renderHeader(); renderHome(); renderSettings();
+  toast("주행거리가 수정되었습니다.");
+});
+document.getElementById("btnBackup").addEventListener("click", exportData);
+document.getElementById("btnExport").addEventListener("click", exportData);
+document.getElementById("btnImportTrigger").addEventListener("click", () => document.getElementById("inpImport").click());
+document.getElementById("inpImport").addEventListener("change", e => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value = ""; });
+document.getElementById("btnWipe").addEventListener("click", wipeAll);
+
+// 정비 기록 삭제/수정은 목록에서 처리 (탭)
+// 주유 기록도 동일
+
+// ── 초기화 ────────────────────────────────
+load();
+renderHome();
+
+// ── PWA: 서비스워커 등록 (오프라인 지원) ────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
